@@ -785,21 +785,27 @@ function launchFlight(car, tilt, inverted, rtl, dur){
       { transform:`translate(${xExit}px, ${y1}px)` } ],
     { duration: dur, easing:'linear', fill:'forwards' }
   );
-  // car vanishes INTO the exit portal exactly when the shared duration elapses
-  anim.onfinish = () => { car.style.visibility = 'hidden'; };
+  return anim;
 }
 
 /* Launch both cars together as one synced pair: same shared duration so they always
-   reach their exit edge at the same moment, opposite directions, then queue the next pair. */
+   reach their exit edge at the same moment, opposite directions, then queue the next pair.
+   The next pair is triggered by the animations' own "finished" promises (not a separate
+   timer), and only THIS pair's animations are allowed to hide the cars — so a stray,
+   already-superseded animation from an earlier round can never hide a car mid-flight. */
 function launchPair(){
   const dur = 8000 + Math.random()*6000;   // one shared duration for this round
   const rtlA = Math.random() < 0.5;        // regular car: 50/50 left↔right or right↔left
   const rtlB = !rtlA;                      // inverted car: always the opposite side
 
-  launchFlight(carA, tiltA, false, rtlA, dur);
-  launchFlight(carB, tiltB, true, rtlB, dur);
+  const animA = launchFlight(carA, tiltA, false, rtlA, dur);
+  const animB = launchFlight(carB, tiltB, true, rtlB, dur);
 
-  setTimeout(launchPair, dur);             // next pair launches the instant this one lands
+  Promise.all([animA.finished, animB.finished]).then(()=>{
+    carA.style.visibility = 'hidden';
+    carB.style.visibility = 'hidden';
+    launchPair();                          // next pair launches the instant this one lands
+  });
 }
 
 /* keep text readable: dim each car only while it's over the console (never over the TV) */
