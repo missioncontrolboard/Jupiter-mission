@@ -31,10 +31,66 @@ body{
   opacity:.9; will-change:transform, opacity;
   filter:drop-shadow(0 0 16px rgba(53,214,255,.35));
 }
+#carA{ z-index:2; } /* car A always paints above car B's aura, so its own colors are never inverted by it */
 .delorean-tilt{will-change:transform;}
 .delorean-bob{animation:hoverBob 1.6s ease-in-out infinite alternate;}
 .invert-colors{filter:invert(1);}
 @keyframes hoverBob{from{transform:translateY(0);} to{transform:translateY(-9px);}}
+
+/* ---- car nameplates ---- */
+.car-name{
+  position:absolute; left:50%; top:-16px; transform:translateX(-50%);
+  font-family:"Courier New",monospace; font-size:9px; font-weight:bold; letter-spacing:3px;
+  color:var(--neon); text-shadow:0 0 6px var(--neon-dim);
+  background:rgba(5,7,15,.6); padding:2px 7px; border-radius:4px;
+  border:1px solid rgba(53,214,255,.45); white-space:nowrap;
+}
+#carB .car-name{
+  color:#d9a6ff; text-shadow:0 0 6px rgba(180,80,255,.55);
+  border-color:rgba(180,80,255,.5);
+}
+
+/* ---- car B's aura: inverts whatever's behind it (except car A, which always
+   paints above it — see z-index rule) and adds a swirling purple/black energy look ---- */
+.aura{
+  position:absolute; left:-70%; top:-70%; width:240%; height:240%;
+  overflow:hidden; pointer-events:none;
+  clip-path:polygon(100.6% 52.0%, 93.8% 62.8%, 86.9% 71.6%, 74.8% 74.8%, 67.9% 80.5%, 63.6% 98.6%, 50.0% 94.4%, 40.3% 85.4%, 31.2% 81.9%, 23.5% 76.4%, 5.4% 75.7%, 4.0% 63.3%, 16.6% 52.0%, 12.7% 42.8%, 14.2% 33.0%, 15.4% 20.2%, 25.9% 13.6%, 41.8% 23.9%, 50.0% 17.1%, 62.0% 10.8%, 73.2% 15.0%, 82.9% 21.7%, 78.1% 37.1%, 85.2% 43.3%);
+  animation:auraMorph 4.5s ease-in-out infinite, auraSpin 9s linear infinite;
+  backdrop-filter:invert(1) saturate(1.6) contrast(1.1);
+  -webkit-backdrop-filter:invert(1) saturate(1.6) contrast(1.1);
+}
+@keyframes auraMorph{
+  0%,100%{clip-path:polygon(100.6% 52.0%, 93.8% 62.8%, 86.9% 71.6%, 74.8% 74.8%, 67.9% 80.5%, 63.6% 98.6%, 50.0% 94.4%, 40.3% 85.4%, 31.2% 81.9%, 23.5% 76.4%, 5.4% 75.7%, 4.0% 63.3%, 16.6% 52.0%, 12.7% 42.8%, 14.2% 33.0%, 15.4% 20.2%, 25.9% 13.6%, 41.8% 23.9%, 50.0% 17.1%, 62.0% 10.8%, 73.2% 15.0%, 82.9% 21.7%, 78.1% 37.1%, 85.2% 43.3%);}
+  50%    {clip-path:polygon(102.3% 52.0%, 90.6% 62.0%, 85.0% 70.6%, 72.6% 72.8%, 71.3% 85.9%, 64.4% 101.3%, 50.0% 88.5%, 40.6% 84.3%, 31.4% 81.7%, 20.4% 79.3%, 2.0% 77.5%, 11.4% 61.5%, 18.3% 52.0%, 9.5% 42.0%, 12.2% 31.9%, 13.2% 18.2%, 29.3% 19.0%, 42.6% 26.7%, 50.0% 11.2%, 62.3% 9.7%, 73.4% 14.8%, 79.8% 24.6%, 74.7% 38.9%, 92.6% 41.5%);}
+}
+@keyframes auraSpin{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
+.aura-core{
+  position:absolute; inset:6%; border-radius:50%;
+  background:radial-gradient(circle, rgba(248,213,186,.6) 0%, rgba(241,144,121,.5) 40%, rgba(224,39,23,.4) 70%, transparent 100%);
+  filter:blur(7px);
+  animation:auraPulse 2.1s ease-in-out infinite;
+}
+@keyframes auraPulse{0%,100%{transform:scale(.9); opacity:.8;} 50%{transform:scale(1.12); opacity:1;}}
+.aura-wisp{
+  position:absolute; inset:-8%; border-radius:50%;
+  background:conic-gradient(from 0deg,
+    transparent 0 18deg, rgba(250,250,250,.65) 22deg 32deg, transparent 36deg 92deg,
+    rgba(224,39,23,.7) 96deg 116deg, transparent 120deg 198deg,
+    rgba(250,250,250,.55) 202deg 214deg, transparent 218deg 296deg,
+    rgba(224,39,23,.65) 300deg 318deg, transparent 322deg 360deg);
+  filter:blur(3px); mix-blend-mode:screen;
+}
+.aura-wisp-1{animation:spin 3.6s linear infinite;}
+.aura-wisp-2{animation:spinRev 4.8s linear infinite; opacity:.75;}
+.aura-wisp-3{animation:spin 6.4s linear infinite; opacity:.6; inset:3%;}
+.aura-flicker{
+  position:absolute; inset:0; border-radius:50%;
+  box-shadow:0 0 45px 14px rgba(224,39,23,.6), 0 0 90px 30px rgba(250,250,250,.4), inset 0 0 34px rgba(241,144,121,.55);
+  animation:auraFlicker .35s steps(2) infinite;
+}
+@keyframes auraFlicker{50%{opacity:.65;}}
+
 .trail{
   transform-origin:right center;
   filter:drop-shadow(0 0 8px rgba(255,157,46,.6)) drop-shadow(0 0 22px rgba(255,61,31,.4));
@@ -127,6 +183,27 @@ body{
   filter:blur(1px);
   animation:coreThrob .45s ease-in-out infinite alternate;
 }
+.portal-ripple{
+  position:absolute; inset:16%; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.4), transparent 72%);
+  mix-blend-mode:screen; pointer-events:none;
+  animation:rippleGlow 1.6s ease-in-out infinite;
+}
+@keyframes rippleGlow{
+  0%,100%{opacity:.2; transform:scale(.88);}
+  50%    {opacity:.55; transform:scale(1.1);}
+}
+
+/* ---- pickles orbiting each portal ---- */
+.portal-pickles{position:absolute; inset:0; pointer-events:none; z-index:3;}
+.pickle-slot{position:absolute; top:50%; left:50%; width:0; height:0;}
+.pickle-orbit{position:absolute; top:0; left:0; width:0; height:0; animation:orbitSpin 3.6s linear infinite;}
+.pickle-orbit.rev{animation-direction:reverse; animation-duration:4.6s;}
+.pickle-wrap{position:absolute; left:0; top:0; transform:translate(-50%,-50%) translateY(-38px);}
+.pickle-wrap.outer{transform:translate(-50%,-50%) translateY(-70px);}
+.pickle-svg{width:11px; height:19px; display:block; filter:drop-shadow(0 0 4px rgba(140,255,160,.6));}
+@keyframes orbitSpin{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
+
 .portal.closing .portal-burst{animation:portalClose .5s ease-in forwards;}
 @keyframes portalClose{to{transform:scale(.1); opacity:0; filter:brightness(3);}}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -346,6 +423,26 @@ footer{
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="pickleShape" viewBox="0 0 40 70">
+      <ellipse cx="20" cy="35" rx="14" ry="32" fill="#6fae2e" stroke="#3f6e18" stroke-width="2"/>
+      <ellipse cx="20" cy="35" rx="10" ry="27" fill="#8ed34a" opacity=".55"/>
+      <circle cx="13" cy="15" r="1.5" fill="#3f6e18" opacity=".65"/>
+      <circle cx="27" cy="21" r="1.5" fill="#3f6e18" opacity=".65"/>
+      <circle cx="11" cy="29" r="1.5" fill="#3f6e18" opacity=".65"/>
+      <circle cx="29" cy="35" r="1.5" fill="#3f6e18" opacity=".65"/>
+      <circle cx="14" cy="43" r="1.5" fill="#3f6e18" opacity=".65"/>
+      <circle cx="26" cy="49" r="1.5" fill="#3f6e18" opacity=".65"/>
+      <circle cx="15" cy="16" r="2.6" fill="#1a2e0a"/>
+      <circle cx="25" cy="16" r="2.6" fill="#1a2e0a"/>
+      <circle cx="16" cy="15" r=".9" fill="#fff"/>
+      <circle cx="26" cy="15" r=".9" fill="#fff"/>
+      <path d="M14 23 Q20 28 26 23" stroke="#1a2e0a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
   <!-- ===== FLYING DELOREAN A (portal-to-portal, dims over text only) ===== -->
   <div class="delorean-layer" id="carA"><div class="delorean-tilt" id="tiltA"><div class="delorean-bob">
     <svg viewBox="0 0 340 200" aria-hidden="true">
@@ -380,11 +477,35 @@ footer{
       <ellipse cx="205" cy="152" rx="80" ry="8" fill="#35d6ff" opacity=".3"/>
       <rect x="196" y="112" width="34" height="12" rx="2" fill="#ffd23f" stroke="#8a741a" stroke-width="2"/>
       <text x="213" y="121" text-anchor="middle" font-family="monospace" font-size="7" font-weight="bold" fill="#1a0e00">OUTATIME</text>
+
+      <!-- original mad-scientist rider (not based on any existing character) -->
+      <g class="mad-scientist" transform="translate(205,18)" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,.7))">
+        <path d="M-9 4 Q-15 -8 -4 -3 Q-7 -15 2 -6 Q0 -19 8 -7 Q13 -15 12 -3 Q19 -7 10 4" fill="#f0f2f5" stroke="#cfd3d8" stroke-width="1"/>
+        <circle cx="0" cy="10" r="10" fill="#f4d9b8"/>
+        <circle cx="-4" cy="10" r="3.6" fill="none" stroke="#2a2a2a" stroke-width="1.5"/>
+        <circle cx="4" cy="10" r="3.6" fill="none" stroke="#2a2a2a" stroke-width="1.5"/>
+        <line x1="-0.6" y1="10" x2="0.6" y2="10" stroke="#2a2a2a" stroke-width="1.5"/>
+        <circle cx="-4" cy="10" r="1.3" fill="#1a1a1a"/>
+        <circle cx="4" cy="10" r="1.3" fill="#1a1a1a"/>
+        <path d="M-4 16 Q0 19 4 16" stroke="#7a5230" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+        <path d="M-13 20 Q0 12 13 20 L14 40 Q0 46 -14 40 Z" fill="#ffe9a8" stroke="#8a741a" stroke-width="2"/>
+        <path d="M-6 20 L0 30 L-5 40" stroke="#e0c26a" stroke-width="1.6" fill="none"/>
+        <path d="M6 20 L0 30 L5 40" stroke="#e0c26a" stroke-width="1.6" fill="none"/>
+        <path d="M-12 24 Q-22 14 -24 4" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M12 24 Q22 14 24 4" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <circle cx="-25" cy="2" r="3.6" fill="#ffe9a8"/>
+        <circle cx="25" cy="2" r="3.6" fill="#ffe9a8"/>
+        <path d="M-6 40 Q-8 50 -5 56" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M6 40 Q8 50 5 56" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <circle cx="-5" cy="57" r="3" fill="#2a2a2a"/>
+        <circle cx="5" cy="57" r="3" fill="#2a2a2a"/>
+      </g>
     </svg>
   </div></div></div>
 
   <!-- ===== FLYING DELOREAN B — inverted colors, always opposite side of car A ===== -->
-  <div class="delorean-layer" id="carB"><div class="delorean-tilt" id="tiltB"><div class="delorean-bob invert-colors">
+  <div class="delorean-layer" id="carB">
+    <div class="delorean-tilt" id="tiltB"><div class="delorean-bob invert-colors">
     <svg viewBox="0 0 340 200" aria-hidden="true">
       <defs>
         <radialGradient id="flameCoreB" cx="32%" cy="50%" r="70%">
@@ -417,6 +538,29 @@ footer{
       <ellipse cx="205" cy="152" rx="80" ry="8" fill="#35d6ff" opacity=".3"/>
       <rect x="196" y="112" width="34" height="12" rx="2" fill="#ffd23f" stroke="#8a741a" stroke-width="2"/>
       <text x="213" y="121" text-anchor="middle" font-family="monospace" font-size="7" font-weight="bold" fill="#1a0e00">OUTATIME</text>
+
+      <!-- original mad-scientist rider (not based on any existing character) -->
+      <g class="mad-scientist" transform="translate(205,18)" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,.7))">
+        <path d="M-9 4 Q-15 -8 -4 -3 Q-7 -15 2 -6 Q0 -19 8 -7 Q13 -15 12 -3 Q19 -7 10 4" fill="#f0f2f5" stroke="#cfd3d8" stroke-width="1"/>
+        <circle cx="0" cy="10" r="10" fill="#f4d9b8"/>
+        <circle cx="-4" cy="10" r="3.6" fill="none" stroke="#2a2a2a" stroke-width="1.5"/>
+        <circle cx="4" cy="10" r="3.6" fill="none" stroke="#2a2a2a" stroke-width="1.5"/>
+        <line x1="-0.6" y1="10" x2="0.6" y2="10" stroke="#2a2a2a" stroke-width="1.5"/>
+        <circle cx="-4" cy="10" r="1.3" fill="#1a1a1a"/>
+        <circle cx="4" cy="10" r="1.3" fill="#1a1a1a"/>
+        <path d="M-4 16 Q0 19 4 16" stroke="#7a5230" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+        <path d="M-13 20 Q0 12 13 20 L14 40 Q0 46 -14 40 Z" fill="#ffe9a8" stroke="#8a741a" stroke-width="2"/>
+        <path d="M-6 20 L0 30 L-5 40" stroke="#e0c26a" stroke-width="1.6" fill="none"/>
+        <path d="M6 20 L0 30 L5 40" stroke="#e0c26a" stroke-width="1.6" fill="none"/>
+        <path d="M-12 24 Q-22 14 -24 4" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M12 24 Q22 14 24 4" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <circle cx="-25" cy="2" r="3.6" fill="#ffe9a8"/>
+        <circle cx="25" cy="2" r="3.6" fill="#ffe9a8"/>
+        <path d="M-6 40 Q-8 50 -5 56" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M6 40 Q8 50 5 56" stroke="#ffe9a8" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <circle cx="-5" cy="57" r="3" fill="#2a2a2a"/>
+        <circle cx="5" cy="57" r="3" fill="#2a2a2a"/>
+      </g>
     </svg>
   </div></div></div>
 
@@ -729,16 +873,43 @@ const carA = document.getElementById('carA'),
       tiltB = document.getElementById('tiltB'),
       textZones = document.querySelectorAll('.console'); // fade over text console only (NOT the TV)
 
+function pickleRing(){
+  const COUNT = 12;
+  let html = '<div class="portal-pickles">';
+  for(let i=0; i<COUNT; i++){
+    const deg = (360/COUNT)*i;
+    const outer = (i % 2 === 0) ? ' outer' : '';
+    const rev = (i % 3 === 0) ? ' rev' : '';
+    html += `<div class="pickle-slot" style="transform:rotate(${deg}deg)">`
+          +   `<div class="pickle-orbit${rev}">`
+          +     `<div class="pickle-wrap${outer}">`
+          +       `<svg class="pickle-svg" viewBox="0 0 40 70"><use href="#pickleShape"></use></svg>`
+          +     `</div>`
+          +   `</div>`
+          + `</div>`;
+  }
+  return html + '</div>';
+}
+
 function spawnPortal(x, y, angle, inverted){
   const p = document.createElement('div');
   p.className = 'portal' + (inverted ? ' portal-inverted' : '');
   p.style.left = x + 'px';
   p.style.top = y + 'px';
   p.style.rotate = angle + 'deg';  // face along the flight path
-  p.innerHTML = '<div class="portal-burst"><div class="portal-outer-ring"></div><div class="portal-ring"><div class="portal-arcs"></div><div class="portal-sparks"></div><div class="portal-core"></div></div></div>';
+  p.innerHTML = '<div class="portal-burst">'
+    + '<div class="portal-outer-ring"></div>'
+    + '<div class="portal-ring">'
+    +   '<div class="portal-arcs"></div>'
+    +   '<div class="portal-sparks"></div>'
+    +   '<div class="portal-ripple"></div>'
+    +   '<div class="portal-core"></div>'
+    + '</div>'
+    + pickleRing()
+    + '</div>';
   document.body.appendChild(p);
-  setTimeout(()=>p.classList.add('closing'), 3500); // linger, then collapse
-  setTimeout(()=>p.remove(), 4000);                 // total lifetime: 4s
+  setTimeout(()=>p.classList.add('closing'), 4200); // linger, then collapse (was 3.5s, +0.7s)
+  setTimeout(()=>p.remove(), 4700);                 // total lifetime: 4.7s (was 4s, +0.7s)
 }
 
 /* car: the layer element, tilt: its tilt wrapper, inverted: use inverted portal colors,
@@ -775,8 +946,9 @@ function launchFlight(car, tilt, inverted, rtl, dur){
     : `rotate(${tiltAngle}deg)`;
   const portalAngle = Math.atan2(y1 - y0, xExit - x0) * 180/Math.PI;
 
-  // portals materialize exactly 2.8s before the car reaches each side, with a colored burst
-  setTimeout(()=>spawnPortal(entryPortalX, y0 + carH/2, portalAngle, inverted), Math.max(0, tIn - 2800));
+  // starting (entry) portal now materializes 1.8s before the car arrives (delayed 1s from before);
+  // exit portal still materializes 2.8s before the car reaches the far side
+  setTimeout(()=>spawnPortal(entryPortalX, y0 + carH/2, portalAngle, inverted), Math.max(0, tIn - 1800));
   setTimeout(()=>spawnPortal(exitPortalX, y1 + carH/2, portalAngle, inverted), Math.max(0, dur - 2800));
 
   car.style.visibility = 'visible';
@@ -804,22 +976,23 @@ function launchPair(){
   Promise.all([animA.finished, animB.finished]).then(()=>{
     carA.style.visibility = 'hidden';
     carB.style.visibility = 'hidden';
-    launchPair();                          // next pair launches the instant this one lands
+    const gap = 1600;  // cars stay off screen for 1.6 seconds between rounds (was 1s, +0.6s)
+    setTimeout(launchPair, gap);
   });
 }
 
-/* keep text readable: dim each car only while it's over the console (never over the TV) */
+/* keep text readable: dim car A over the console (never over the TV).
+   Car B (ECLIPSE) stays fully opaque everywhere — its aura inverts what's
+   behind it instead of fading out of the way. */
 function opacityTick(){
-  [carA, carB].forEach(car=>{
-    const r = car.getBoundingClientRect();
-    let over = false;
-    for(const z of textZones){
-      const zr = z.getBoundingClientRect();
-      if(r.left < zr.right && r.right > zr.left && r.top < zr.bottom && r.bottom > zr.top){ over = true; break; }
-    }
-    const target = over ? 0.18 : 0.9;
-    car.style.opacity = parseFloat(car.style.opacity || .9) + (target - parseFloat(car.style.opacity || .9)) * 0.25;
-  });
+  const r = carA.getBoundingClientRect();
+  let over = false;
+  for(const z of textZones){
+    const zr = z.getBoundingClientRect();
+    if(r.left < zr.right && r.right > zr.left && r.top < zr.bottom && r.bottom > zr.top){ over = true; break; }
+  }
+  const target = over ? 0.18 : 0.9;
+  carA.style.opacity = parseFloat(carA.style.opacity || .9) + (target - parseFloat(carA.style.opacity || .9)) * 0.25;
   requestAnimationFrame(opacityTick);
 }
 launchPair();
