@@ -30,6 +30,7 @@ body{
   width:min(34vw, 340px); pointer-events:none;
   opacity:.9; will-change:transform, opacity;
   filter:drop-shadow(0 0 16px rgba(53,214,255,.35));
+  visibility:hidden;
 }
 .delorean-tilt{will-change:transform;}
 .delorean-bob{animation:hoverBob 1.6s ease-in-out infinite alternate;}
@@ -231,6 +232,14 @@ main{
 }
 .remote-ch:hover{border-color:var(--green); box-shadow:0 0 8px rgba(89,255,156,.35);}
 .remote-ch:active{transform:translateY(1px);}
+.remote-ch.active{
+  background:linear-gradient(180deg,#7a4a12,#4a2c08); border-color:var(--orange);
+  color:#fff3df; box-shadow:0 0 10px rgba(255,157,46,.45);
+}
+.remote-power.off{
+  background:radial-gradient(circle at 35% 30%, #232a37, #10141d 70%);
+  border-color:#2a3350; color:#4a5468; text-shadow:none;
+}
 .remote-label{font-size:7px; letter-spacing:2px; color:#5a6a94; text-align:center; margin-top:2px;}
 .tv{
   width:100%; max-width:460px;
@@ -254,6 +263,11 @@ main{
   background:#02030a; border-radius:12%/16%;
   overflow:hidden;
   box-shadow:0 0 24px rgba(53,214,255,.25) inset;
+  transition:filter .35s ease, box-shadow .35s ease;
+}
+.screen.tv-off{
+  filter:brightness(0) saturate(0);
+  box-shadow:0 0 6px rgba(53,214,255,.06) inset;
 }
 .scanlines{
   position:absolute; inset:0; z-index:6; pointer-events:none;
@@ -386,7 +400,7 @@ footer{
   </defs>
 </svg>
 
-  <!-- ===== FLYING DELOREAN A (portal-to-portal, dims over text only) ===== -->
+  <!-- ===== FLYING DELOREAN A (portal-to-portal, teleports between flights) ===== -->
   <div class="delorean-layer" id="carA"><div class="delorean-tilt" id="tiltA"><div class="delorean-bob">
     <svg viewBox="0 0 340 200" aria-hidden="true">
       <defs>
@@ -570,11 +584,12 @@ footer{
     <!-- ============ TV REMOTE ============ -->
     <div class="remote">
       <div class="remote-led"></div>
-      <div class="remote-power" title="Power (decorative)">⏻</div>
+      <div class="remote-power" id="tvPower" title="Power">⏻</div>
       <div class="remote-grid" id="remoteGrid"></div>
       <div class="remote-chbtns">
         <button class="remote-ch" id="chUp">CH ▲</button>
         <button class="remote-ch" id="chDown">CH ▼</button>
+        <button class="remote-ch" id="chPause">⏸ PAUSE</button>
       </div>
       <div class="remote-label">OUTATIME<br>REMOTE</div>
     </div>
@@ -730,10 +745,43 @@ function showSlide(i){
   channelBox.textContent = 'CH ' + ch;
   caption.textContent = slides[cur].dataset.cap;
 }
+
+/* ---- pause: freezes the slideshow on the current image ---- */
+let isPaused = false;
+const chPauseBtn = document.getElementById('chPause');
 function resetTimer(){
   clearInterval(slideTimer);
-  slideTimer = setInterval(()=>showSlide((cur+1)%slides.length), 4000);
+  if(!isPaused && tvOn){
+    slideTimer = setInterval(()=>showSlide((cur+1)%slides.length), 4000);
+  }
 }
+chPauseBtn.addEventListener('click', ()=>{
+  if(!tvOn) return;
+  isPaused = !isPaused;
+  chPauseBtn.textContent = isPaused ? '▶ PLAY' : '⏸ PAUSE';
+  chPauseBtn.classList.toggle('active', isPaused);
+  resetTimer();
+});
+
+/* ---- power: turns the CRT picture on/off, remembering where it left off ---- */
+let tvOn = true;
+const screenEl = document.getElementById('screen');
+const tvPowerBtn = document.getElementById('tvPower');
+const controllable = [...remoteBtns, document.getElementById('chUp'), document.getElementById('chDown'), chPauseBtn, ...dots];
+function setTvPower(on){
+  tvOn = on;
+  screenEl.classList.toggle('tv-off', !on);
+  tvPowerBtn.classList.toggle('off', !on);
+  channelBox.textContent = on ? ('CH ' + String(cur+1).padStart(2,'0')) : '— — —';
+  caption.textContent = on ? slides[cur].dataset.cap : 'TV OFF';
+  controllable.forEach(el=>{
+    el.style.pointerEvents = on ? '' : 'none';
+    el.style.opacity = on ? '' : '.35';
+  });
+  if(on){ resetTimer(); } else { clearInterval(slideTimer); }
+}
+tvPowerBtn.addEventListener('click', ()=> setTvPower(!tvOn));
+
 resetTimer();
 
 /* ---- live "Present Time" circuit ---- */
@@ -748,9 +796,14 @@ tick(); setInterval(tick, 1000);
 </script>
 
 <script>
-/* ================= DELOREAN: PORTAL-TO-PORTAL FLIGHTS ================= */
+/* ================= DELOREAN: TELEPORT-SYNCED PORTAL FLIGHTS =================
+   The car flies in, vanishes exactly as it reaches a portal that finishes
+   forming at that instant, then reappears from a second portal — timed the
+   same way in reverse — and flies on. Nothing is visible mid-teleport. */
 const carA = document.getElementById('carA'),
       tiltA = document.getElementById('tiltA');
+
+function rand(min, max){ return min + Math.random() * (max - min); }
 
 function pickleRing(){
   const COUNT = 12;
@@ -770,12 +823,14 @@ function pickleRing(){
   return html + '</div>';
 }
 
-function spawnPortal(x, y, angle){
+// lingerMs: how long the ring stays fully open before it starts collapsing
+// totalMs: full lifetime (creation to DOM removal)
+function spawnPortal(x, y, angle, lingerMs, totalMs){
   const p = document.createElement('div');
   p.className = 'portal';
   p.style.left = x + 'px';
   p.style.top = y + 'px';
-  p.style.rotate = angle + 'deg';  // face along the flight path
+  p.style.rotate = angle + 'deg';  // face along the car's direction of travel
   p.innerHTML = '<div class="portal-burst">'
     + '<div class="portal-outer-ring"></div>'
     + '<div class="portal-ring">'
@@ -787,47 +842,91 @@ function spawnPortal(x, y, angle){
     + pickleRing()
     + '</div>';
   document.body.appendChild(p);
-  setTimeout(()=>p.classList.add('closing'), 4200); // linger, then collapse
-  setTimeout(()=>p.remove(), 4700);                 // total lifetime: 4.7s
+  setTimeout(()=>p.classList.add('closing'), lingerMs);
+  setTimeout(()=>p.remove(), totalMs);
+  return p;
 }
+
+const FORM_MS = 500;  // matches the portalAppear CSS animation duration
+const HOLD_MS = 350;  // how long each ring stays fully open before collapsing
+const GAP_MS  = 550;  // total time the car spends invisible mid-teleport
 
 function launchFlight(){
   const W = window.innerWidth, H = window.innerHeight;
   const carW = carA.offsetWidth, carH = carW * (200/340); // svg aspect 340x200
-  const edge = 8;                                   // portal sits on the screen edge
+  const speed = rand(0.16, 0.24); // px/ms, shared across both legs
 
-  // always left to right
-  const x0 = -(carW + 80);    // spawn off-screen, left
-  const xExit = W - edge;     // finish AT the exit portal, right side
-  const entryEdgeX = edge;
-  const entryPortalX = edge + 6;
-  const exitPortalX = W - edge - 6;
+  // Direction: 1 = left-to-right (car's natural facing), -1 = right-to-left (mirrored)
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  const startX = dir === 1 ? -(carW + 80) : (W + carW + 80);
+  const endX   = dir === 1 ? (W + carW + 80) : -(carW + 80);
+  const startY = rand(0, Math.max(0, H - carH));
+  const endY   = rand(0, Math.max(0, H - carH));
 
-  const y0 = Math.random() * (H - carH);            // random height at the start
-  const y1 = Math.random() * (H - carH);            // random height at the end
-  const dur = 8000 + Math.random()*6000;
-  const speed = (xExit - x0) / dur;                 // px per ms (linear easing)
-  const tIn = (entryEdgeX - x0) / speed;             // ms until car reaches the entry-side edge
+  // Two random x-fractions across the screen for the portals, ordered so the
+  // car reaches "entry" before "exit" regardless of which way it's flying —
+  // i.e. both portals land at random spots in front of the car's path.
+  let fA = rand(0.08, 0.92), fB = rand(0.08, 0.92);
+  while (Math.abs(fA - fB) < 0.18) { fB = rand(0.08, 0.92); }
+  const fEntry = dir === 1 ? Math.min(fA, fB) : Math.max(fA, fB);
+  const fExit  = dir === 1 ? Math.max(fA, fB) : Math.min(fA, fB);
+  const entryX = fEntry * W, entryY = rand(0, Math.max(0, H - carH));
+  const exitX  = fExit  * W, exitY  = rand(0, Math.max(0, H - carH));
 
-  const tiltAngle = Math.atan2(y1 - y0, Math.abs(xExit - x0)) * 180/Math.PI;
-  tiltA.style.transform = `rotate(${tiltAngle}deg)`;
-  const portalAngle = Math.atan2(y1 - y0, xExit - x0) * 180/Math.PI;
+  const dist1 = entryX - startX;
+  const dur1  = Math.abs(dist1) / speed;
+  const dist2 = endX - exitX;
+  const dur2  = Math.abs(dist2) / speed;
 
-  // portals spawn exactly 2 seconds before the car starts / reaches the end
-  setTimeout(()=>spawnPortal(entryPortalX, y0 + carH/2, portalAngle), Math.max(0, tIn - 2000));
-  setTimeout(()=>spawnPortal(exitPortalX, y1 + carH/2, portalAngle), Math.max(0, dur - 2000));
+  // Portal-facing angle: the real direction of travel (handles both directions).
+  const portalAngle1 = Math.atan2(entryY - startY, entryX - startX) * 180 / Math.PI;
+  const portalAngle2 = Math.atan2(endY - exitY, endX - exitX) * 180 / Math.PI;
+  // Car tilt: slope only (stays right-side-up); horizontal facing comes from the mirror below.
+  const tilt1 = Math.atan2(entryY - startY, Math.abs(dist1)) * 180 / Math.PI;
+  const tilt2 = Math.atan2(endY - exitY, Math.abs(dist2)) * 180 / Math.PI;
 
-  carA.style.visibility = 'visible';
-  const anim = carA.animate(
-    [ { transform:`translate(${x0}px, ${y0}px)` },
-      { transform:`translate(${xExit}px, ${y1}px)` } ],
-    { duration: dur, easing:'linear', fill:'forwards' }
+  // Entry portal: spawn so it finishes forming at the exact moment the car arrives
+  setTimeout(
+    ()=>spawnPortal(entryX + carW/2, entryY + carH/2, portalAngle1, HOLD_MS, HOLD_MS + FORM_MS),
+    Math.max(0, dur1 - FORM_MS)
   );
 
-  anim.finished.then(()=>{
+  // Exit portal: spawn so it finishes forming at the exact moment the car reappears
+  setTimeout(
+    ()=>spawnPortal(exitX + carW/2, exitY + carH/2, portalAngle2, HOLD_MS, HOLD_MS + FORM_MS),
+    Math.max(0, dur1 + GAP_MS - FORM_MS)
+  );
+
+  carA.style.visibility = 'visible';
+  tiltA.style.transform = `scaleX(${dir}) rotate(${tilt1}deg)`;
+
+  const anim1 = carA.animate(
+    [ { transform:`translate(${startX}px, ${startY}px)` },
+      { transform:`translate(${entryX}px, ${entryY}px)` } ],
+    { duration: dur1, easing:'linear', fill:'forwards' }
+  );
+
+  anim1.finished.then(()=>{
+    // swallowed by the entry portal, right as it finishes forming
     carA.style.visibility = 'hidden';
-    const gap = 800 + Math.random()*3200;  // 0.8–4s delay before the car drives again
-    setTimeout(launchFlight, gap);
+
+    setTimeout(()=>{
+      // spat out of the exit portal, right as it finishes forming
+      carA.style.visibility = 'visible';
+      tiltA.style.transform = `scaleX(${dir}) rotate(${tilt2}deg)`;
+
+      const anim2 = carA.animate(
+        [ { transform:`translate(${exitX}px, ${exitY}px)` },
+          { transform:`translate(${endX}px, ${endY}px)` } ],
+        { duration: dur2, easing:'linear', fill:'forwards' }
+      );
+
+      anim2.finished.then(()=>{
+        carA.style.visibility = 'hidden';
+        const gap = 800 + Math.random() * 3200; // pause before the next flight
+        setTimeout(launchFlight, gap);
+      });
+    }, GAP_MS);
   });
 }
 
